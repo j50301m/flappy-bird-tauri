@@ -62,7 +62,7 @@ export function HomePage() {
       sx={{
         minHeight: "100vh",
         background: `url(${backgroundImage})`,
-        backgroundSize: 'contain', // 裁切圖片
+        backgroundSize: "contain", // 裁切圖片
         backgroundColor: "#4EC0CA", // 原始 Flappy Bird 的背景色
         backgroundRepeat: "repeat", // Flappy Bird 的背景是重複的
         display: "flex",
@@ -145,7 +145,6 @@ export function HomePage() {
             </Stack>
           </Box>
         </Paper>
-
         <Dialog
           open={openHighScores}
           onClose={() => setOpenHighScores(false)}
