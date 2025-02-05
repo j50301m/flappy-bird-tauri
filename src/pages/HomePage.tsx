@@ -20,7 +20,6 @@ import {
 import { styled } from "@mui/material/styles";
 import VideogameAssetIcon from "@mui/icons-material/VideogameAsset";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import backgroundImage from "../assets/flappy-bird-assets/sprites/background-day.png";
 
 // 自定義動畫按鈕
 const AnimatedButton = styled(Button)`
@@ -61,7 +60,7 @@ export function HomePage() {
     <Box
       sx={{
         minHeight: "100vh",
-        background: `url(${backgroundImage})`,
+        background: "url(/flappy-bird-assets/sprites/background-day.png)",
         backgroundSize: "contain", // 裁切圖片
         backgroundColor: "#4EC0CA", // 原始 Flappy Bird 的背景色
         backgroundRepeat: "repeat", // Flappy Bird 的背景是重複的
