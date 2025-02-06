@@ -4,16 +4,19 @@ import * as PIXI from 'pixi.js';
 
 
 const PIPE_SPEED = 5;
+const GRAVITY = 3 ;
+const JUMP_FORCE = 5;
 
 interface Bird {
     y:number
-    vy:number
+    isJumping:boolean
 }
 
 interface Pipe {
     x: number;
     topHeight: number;
     scored: boolean;
+    gap: number;
 }
 
 interface GameDimensions {
@@ -101,24 +104,37 @@ const PipeContainer = ({
 const FlappyBird = ({
     dimensions
 }:FlappyBirdProps) => {
-    const [bird,setBird] = React.useState<Bird>({y:dimensions.height/2,vy:0});
+    const [bird,setBird] = React.useState<Bird>({y:dimensions.height/2,isJumping:false});
     const [pipes,setPipes] = React.useState<Pipe[]>([]);
     const [gameState,setGameState] = React.useState<GameState>({score:0,gameOver:false});
     const [birdImages, setBirdImages] = React.useState<PIXI.Texture[]>([]);
+    const [baseImage, setBaseImage] = React.useState<PIXI.Texture>();
     const [pipeImages, setPipeImage] = React.useState<PipeImages>();
     const [isInited, setIsInited] = React.useState<boolean>(false);
 
     const createPipe = React.useCallback(()=>{
-        const gap = Math.random() * 100 + 100;
-        const minPipeHeight = dimensions.height*0.1;
+        const gap = Math.random() * 300 + 100; // 200~600
+        const minPipeHeight = dimensions.height*0.2;
         const maxPipeHeight = dimensions.height- gap - minPipeHeight;
         const topHeight = Math.random() * (maxPipeHeight - minPipeHeight) + minPipeHeight;
         setPipes(prevPips => [...prevPips,{
             x:dimensions.width,
             topHeight:topHeight,
-            scored:false
+            scored:false,
+            gap:gap
         }])
     },[dimensions.width,dimensions.height]);
+
+    // 碰撞邏輯
+    const checkCollision = (bird:Bird,pipes:Pipe[])=>{
+        for (let pipe of pipes){
+            if (bird.y < pipe.topHeight || bird.y > pipe.topHeight + pipe.gap){
+                // if (){
+                //     return true;
+                // }
+            }
+        }
+    }
 
     // Initialize the game
     React.useEffect(() => {
@@ -135,6 +151,9 @@ const FlappyBird = ({
                 const pipeHeader = PIXI.Texture.from('/flappy-bird-assets/sprites/pipe-green-header.png');
                 const pipeBody = PIXI.Texture.from('/flappy-bird-assets/sprites/pipe-green-body.png');
 
+                // Load the ground image
+                const baseTexture = PIXI.Texture.from('/flappy-bird-assets/sprites/base.png');
+
                 // 等待所有紋理加載完成
                 await Promise.all([
                     ...birdTextures.map(texture => texture.baseTexture.resource.load()),
@@ -143,6 +162,7 @@ const FlappyBird = ({
                 ]);
 
                 setBirdImages(birdTextures);
+                setBaseImage(baseTexture);
                 setPipeImage({head: pipeHeader, body: pipeBody});
                 setIsInited(true);
             } catch (error) {
@@ -161,10 +181,36 @@ const FlappyBird = ({
         };
     }, []);
 
+    // 修改跳躍處理
+    React.useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === ' ' && bird.isJumping === false) {
+                setBird(prevBird => ({
+                    ...prevBird,
+                    isJumping: true,
+                }));
+                setTimeout(() => {
+                    setBird(prevBird => ({
+                        ...prevBird,
+                        isJumping: false,
+                    }));
+                }, 100);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
+
+
     useTick(delta => {
         if (gameState.gameOver) return;
 
-        if (pipes.length === 0 || pipes[pipes.length - 1].x < dimensions.width - dimensions.width / 2) {
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < dimensions.width - dimensions.width / 3) {
             createPipe();
         }
 
@@ -196,42 +242,27 @@ const FlappyBird = ({
             }
         });
 
-        // 更新小鳥位置
+        // 更新小鳥位置 - 添加重力效果
         setBird(prevBird => {
-            const newBird = {
-                y: prevBird.y + prevBird.vy + 2 * delta,
-                vy: 0
-            };
-
-            if (newBird.y > dimensions.height || newBird.y < 0) {
-                setGameState(prevState => ({
-                    ...prevState,
-                    gameOver: true
-                }));
+            // 檢查是否碰到管道
+            if (prevBird.isJumping) {
+                return {
+                    ...prevBird,
+                    y: prevBird.y - JUMP_FORCE* delta,
+                };
+            }else {
+                return {
+                    ...prevBird,
+                    y: prevBird.y + GRAVITY * delta,
+                }
             }
-
-            return newBird;
         });
+
 
     })
 
-    // Handle jump
-    React.useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === ' ') {
-                setBird(prevBird => ({
-                    ...prevBird,
-                    vy: -100
-                }));
-            }
-        };
 
-        window.addEventListener('keydown', handleKeyDown);
 
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, []);
 
 
     // If the game is not initialized, return null
@@ -252,8 +283,17 @@ const FlappyBird = ({
                 y={bird.y}
             />
             {pipes.map((pipe,index)=>(
-                <PipeContainer key={index} x={pipe.x} topHeight={pipe.topHeight} pipeImage={pipeImages} gap={100} screenHeight={dimensions.height}/>
+                <PipeContainer key={index} x={pipe.x} topHeight={pipe.topHeight} pipeImage={pipeImages} gap={pipe.gap} screenHeight={dimensions.height}/>
             ))}
+            <TilingSprite
+                x={dimensions.width/2}
+                y={dimensions.height}
+                texture={baseImage}
+                anchor={0.5}
+                width={dimensions.width}
+                height={dimensions.height*0.2}
+                tilePosition={{x:0,y:0}}
+            />
         </Container>
     )
 }
@@ -295,6 +335,7 @@ export const FlappyBirdApp = () => {
 
     return (
         <Stage width={dimensions.width} height={dimensions.height}>
+            <Sprite image="/flappy-bird-assets/sprites/background-day.png" width={dimensions.width} height={dimensions.height} />
             <FlappyBird dimensions={dimensions} />
         </Stage>
     );
