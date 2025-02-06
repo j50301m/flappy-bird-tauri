@@ -127,13 +127,7 @@ const FlappyBird = ({
 
     // 碰撞邏輯
     const checkCollision = (bird:Bird,pipes:Pipe[])=>{
-        for (let pipe of pipes){
-            if (bird.y < pipe.topHeight || bird.y > pipe.topHeight + pipe.gap){
-                // if (){
-                //     return true;
-                // }
-            }
-        }
+        // TODO: 檢查是否碰撞
     }
 
     // Initialize the game
